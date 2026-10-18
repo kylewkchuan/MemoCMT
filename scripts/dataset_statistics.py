@@ -27,7 +27,11 @@ from datetime import datetime
 
 import pandas as pd
 
-DATA_ROOT = r"C:\Users\USER\OneDrive\Desktop\local_server\CBALL_Kyle\MemoCMT_orig\data\MELD.Raw"
+# Defaults to <repo>/data/MELD.Raw so it works on any machine; override with MELD_ROOT.
+DATA_ROOT = os.environ.get(
+    "MELD_ROOT",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "MELD.Raw"),
+)
 SPLITS = {
     "Train": "train_sent_emo.csv",
     "Dev": "dev_sent_emo.csv",
