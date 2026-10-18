@@ -228,6 +228,20 @@ confusion matrix the same way the DirectML machine did (weighted recall
 always equals accuracy in multi-class classification, so that's a free
 sanity check).
 
+## 5b. The 3 specific MELD samples that get dropped (cross-verified on 2 machines)
+
+Two independent machines (this one + a separate RTX 3070 session) both ran
+into exactly these 3 files. Root causes confirmed:
+
+| Sample | Split | When it's dropped | Root cause |
+|---|---|---|---|
+| `dia125_utt3.mp4` | train | preprocessing | Corrupt MP4 container — ffmpeg: `moov atom not found` / `Invalid data found when processing input`. The file is truncated (moov atom, which holds track/codec/timing metadata, is missing — a known MELD-release data-quality issue, not something we caused). File exists, 1.9MB, not literally empty, but undecodable. |
+| `dia110_utt7.mp4` | dev | preprocessing | **File does not exist at all** in the official `dev.tar.gz` release — confirmed missing on two independent downloads of the same official HuggingFace mirror, so this isn't a download/extraction error on either machine, it's absent from the archive itself. |
+| `dia38_utt4.mp4` | test | eval-time (GPU OOM) | Mislabeled clip boundary: transcript is one short line ("Oh its great, its a role on") but the extracted clip is **304.97 seconds** long (vs. ~3.3-3.6s average) — the source timestamps/clip extraction for this utterance are wrong in the official release. Still present and valid in `test.pkl` (2,211 samples); only dropped *at evaluation time* by the OOM guard in `eval.py`/`auc_roc.py` (see §3), not during preprocessing. |
+
+These 3 are expected and accounted for — don't spend time trying to "fix"
+them; the counts in §2 already reflect them being dropped.
+
 ## 6. Known gotchas (from the DirectML machine, may or may not apply here)
 
 - MLflow's `mlflow ui` on Windows needs `<conda env>\Scripts` on `PATH` to
