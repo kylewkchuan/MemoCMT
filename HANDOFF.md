@@ -74,6 +74,7 @@ dataset").
 | **Hardware/backend RNG divergence (DirectML vs. CUDA)** | **UNTESTED — this is why the project is moving to this machine.** `torch.manual_seed(0)` does not guarantee identical results across backends; `batch_size=1` training is itself unstable/seed-sensitive (the paper states this explicitly) |
 | Paper's MELD numbers are a k-fold average vs. our single run | Plausible, unverifiable — paper has a possibly-contradictory statement about k=5 CV "across all datasets" vs. a separate statement that MELD specifically used the fixed train/dev/test split |
 | Paper's actual (undisclosed) MELD preprocessing differs from what's in the public repo | Likely true at some level, given the repo's MELD path doesn't run at all as published — can't verify further without the authors' original code |
+| Paper used a different audio *source* than re-extracting from `MELD.Raw.tar.gz`'s mp4 clips (e.g. MELD's other download, `MELD.Features.Models.tar.gz`) | **Ruled out** — that archive holds precomputed openSMILE feature vectors (1611/1422-dim) and GloVe/bcLSTM outputs for the *original* MELD paper's (Poria et al. 2019) own baseline models, not raw audio. HuBERT needs raw waveform input, not hand-engineered feature vectors, so this archive isn't a viable alternative source for this architecture regardless. Audio must come from the mp4 clips either way — only the *extraction tool/version* could plausibly differ, same small-magnitude category as the already-ruled-out torchaudio version question |
 
 ### What running on this (CUDA) machine should establish
 
