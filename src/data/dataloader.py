@@ -15,7 +15,7 @@ import torchaudio
 
 from models.networks import MemoCMT
 from configs.base import Config
-from torchvggish.vggish_input import waveform_to_examples
+from utils.device import get_device
 from tqdm.auto import tqdm
 import pickle
 import librosa
@@ -53,6 +53,7 @@ class BaseDataset(Dataset):
             self.text_max_length = None
 
         self.audio_encoder_type = cfg.audio_encoder_type
+        self.audio_channel_mode = getattr(cfg, "audio_channel_mode", "mean")
 
         self.encode_data = False
         self.list_encode_audio_data = []
@@ -63,7 +64,7 @@ class BaseDataset(Dataset):
 
     def _encode_data(self, encoder):
         logging.info("Encoding data for training...")
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        device = get_device()
         encoder.train()
         encoder.to(device)
         for index in tqdm(range(len(self.data_list))):
@@ -108,6 +109,14 @@ class BaseDataset(Dataset):
 
     def __paudio__(self, file_path: int) -> torch.Tensor:
         samples, sr = sf.read(file_path, dtype="int16")
+        if samples.ndim > 1:
+            # Downmix multi-channel audio (e.g. stereo MELD clips) to mono
+            if self.audio_channel_mode == "left":
+                samples = samples[:, 0]
+            elif self.audio_channel_mode == "right":
+                samples = samples[:, -1]
+            else:
+                samples = samples.mean(axis=1).astype(np.int16)
         if (
             self.audio_max_length is not None
             and samples.shape[0] < self.audio_max_length
@@ -118,9 +127,10 @@ class BaseDataset(Dataset):
         elif self.audio_max_length is not None:
             samples = samples[: self.audio_max_length]
 
+        samples = torch.from_numpy(samples.astype(np.float32))
         samples = torchaudio.functional.resample(samples, sr, 16000)
 
-        return torch.from_numpy(samples.astype(np.float32))
+        return samples
 
     def _text_preprocessing(self, text):
         """
@@ -172,6 +182,7 @@ def build_train_test_dataset(cfg: Config, encoder_model: Union[MemoCMT, None] = 
     DATASET_MAP = {
         "IEMOCAP": BaseDataset,
         "ESD": BaseDataset,
+        "MELD": BaseDataset,
     }
 
     dataset = DATASET_MAP.get(cfg.data_name, None)

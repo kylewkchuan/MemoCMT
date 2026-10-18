@@ -6,6 +6,7 @@ import torch
 from torch import Tensor
 from configs.base import Config
 from models.networks import MemoCMT
+from utils.device import get_device
 from utils.torch.trainer import TorchTrainer
 
 
@@ -21,7 +22,7 @@ class Trainer(TorchTrainer):
         self.cfg = cfg
         self.network = network
         self.criterion = criterion
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = get_device()
         self.network.to(self.device)
 
     def train_step(self, batch: Dict[str, Tensor]) -> Dict[str, Tensor]:

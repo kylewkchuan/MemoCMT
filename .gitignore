@@ -1,4 +1,8 @@
 checkpoints/
+
+# MELD raw dataset (tens of GB, copyrighted TV clips) -- never commit.
+# Re-download via scripts/preprocess.py's instructions on any new machine.
+/data/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

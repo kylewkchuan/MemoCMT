@@ -223,9 +223,10 @@ def preprocess_MELD(args):
     train_dataframe = pd.read_csv(train_csv)
     val_dataframe = pd.read_csv(val_csv)
     test_dataframe = pd.read_csv(test_csv)
+    label_map = LABEL_MAP
     if args.all_classes:
         meld2label = {}
-        LABEL_MAP = {}
+        label_map = {}
         labels = []
         for _, row in test_dataframe.iterrows():
             labels.append(row.Emotion)
@@ -233,8 +234,8 @@ def preprocess_MELD(args):
         for i, label_name in enumerate(labels):
             meld2label[label_name] = i
         for i in range(len(labels)):
-            LABEL_MAP[i] = i
-        
+            label_map[i] = i
+
         # Save labels
         os.makedirs(args.dataset + "_preprocessed", exist_ok=True)
         with open(os.path.join(args.dataset + "_preprocessed", "classes.json"), "w") as f:
@@ -259,13 +260,14 @@ def preprocess_MELD(args):
                     data_path, f"dia{row.Dialogue_ID}_utt{row.Utterance_ID}.wav"
                 )
             )
-            # Convert video to audio
+            # Convert video to audio (skip if already extracted from a previous run)
             try:
-                videoclip = VideoFileClip(video_path)
-                videoclip.audio.write_audiofile(audio_path, verbose=False)
-                samples.append((audio_path, transcript, LABEL_MAP[label]))
-            except:
-                logging.warn(f"Can not preprocess video data: {video_path}")
+                if not os.path.exists(audio_path):
+                    videoclip = VideoFileClip(video_path)
+                    videoclip.audio.write_audiofile(audio_path, verbose=False)
+                samples.append((audio_path, transcript, label_map[label]))
+            except Exception:
+                logging.warning(f"Can not preprocess video data: {video_path}")
 
         return samples
 

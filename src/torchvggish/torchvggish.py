@@ -2,10 +2,12 @@ import torch
 import torch.nn as nn
 from torch import hub
 
+from utils.device import get_device
+
 VGGISH_WEIGHTS = "https://github.com/namphuongtran9196/GitReleaseStorage/releases/download/torchvggish/vggish-10086976.pth"
 PCA_PARAMS = "https://github.com/namphuongtran9196/GitReleaseStorage/releases/download/torchvggish/vggish_pca_params-970ea276.pth"
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = get_device()
 
 
 class VGG(nn.Module):

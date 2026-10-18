@@ -147,6 +147,9 @@ class Config(BaseConfig):
         self.text_max_length: int = 297
         self.audio_max_length: int = 546220
 
+        # how to downmix multi-channel audio to mono: mean | left | right
+        self.audio_channel_mode: str = "mean"
+
         # Model
         self.num_classes: int = 4
         self.num_attention_head: int = 8

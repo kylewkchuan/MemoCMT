@@ -18,6 +18,7 @@ from configs.base import Config
 from data.dataloader import build_train_test_dataset
 from models import losses, networks, optims
 from utils.configs import get_options
+from utils.device import get_device
 from utils.torch.callbacks import CheckpointsCallback
 
 SEED = 0
@@ -25,7 +26,7 @@ random.seed(SEED)
 np.random.seed(SEED)
 torch.manual_seed(SEED)
 torch.cuda.manual_seed_all(SEED)
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = get_device()
 
 
 def main(cfg: Config):

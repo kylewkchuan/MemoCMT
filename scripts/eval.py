@@ -27,6 +27,7 @@ from data.dataloader import build_train_test_dataset
 from tqdm.auto import tqdm
 from models import networks
 from configs.base import Config
+from utils.device import get_device
 from collections import Counter
 from typing import Tuple
 
@@ -49,13 +50,13 @@ def calculate_f1_score(y_true, y_pred) -> Tuple[float, float]:
 
 
 def eval(cfg, checkpoint_path, all_state_dict=True, cm=False):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = get_device()
     network = getattr(networks, cfg.model_type)(cfg)
     network.to(device)
 
     # Build dataset
     _, test_ds = build_train_test_dataset(cfg)
-    weight = torch.load(checkpoint_path, map_location=torch.device(device))
+    weight = torch.load(checkpoint_path, map_location=device)
     if all_state_dict:
         weight = weight["state_dict_network"]
 
@@ -66,16 +67,23 @@ def eval(cfg, checkpoint_path, all_state_dict=True, cm=False):
     y_actu = []
     y_pred = []
 
+    skipped = 0
     for every_test_list in tqdm(test_ds):
         input_ids, audio, label = every_test_list
         input_ids = input_ids.to(device)
         audio = audio.to(device)
         label = label.to(device)
-        with torch.no_grad():
-            output = network(input_ids, audio)[0]
-            _, preds = torch.max(output, 1)
-            y_actu.append(label.detach().cpu().numpy()[0])
-            y_pred.append(preds.detach().cpu().numpy()[0])
+        try:
+            with torch.no_grad():
+                output = network(input_ids, audio)[0]
+                _, preds = torch.max(output, 1)
+                y_actu.append(label.detach().cpu().numpy()[0])
+                y_pred.append(preds.detach().cpu().numpy()[0])
+        except RuntimeError as e:
+            skipped += 1
+            logging.warning(f"Skipping sample (audio len {audio.shape[-1]}): {e}")
+    if skipped:
+        logging.warning(f"Skipped {skipped} sample(s) that ran out of GPU memory.")
     bacc, acc = calculate_accuracy(y_actu, y_pred)
     macro_f1, weighted_f1 = calculate_f1_score(y_actu, y_pred)
     if cm:
